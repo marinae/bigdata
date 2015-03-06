@@ -40,7 +40,7 @@ get_ipython().magic(u'pylab inline')
 
 # In[2]:
 
-TRAINING_SET_URL = "https://kaggle2.blob.core.windows.net/competitions-data/inclass/4277/twitter_train.txt?sv=2012-02-12&se=2015-03-04T15%3A54%3A20Z&sr=b&sp=r&sig=RKsea6k%2F%2BgauZoZdAtahEsj%2FAJDBKZbttSu7xQdpvA8%3D" # insert file path here
+TRAINING_SET_URL = "https://kaggle2.blob.core.windows.net/competitions-data/inclass/4277/twitter_train.txt?sv=2012-02-12&se=2015-03-09T20%3A05%3A02Z&sr=b&sp=r&sig=AnCg73oGzxRz3oIGaerj95UyCubi0yiZLbtd1LDFJKc%3D"
 df_users = pd.read_csv(TRAINING_SET_URL, sep=",", header=0, names=["user_id", "class"])
 df_users.head()
 
@@ -77,13 +77,6 @@ CONSUMER_SECRET = "zqup2Sk9Sb5DWm7q8swBgXaVeW1TncacBb0hfPbywyNDmknAcH"
 
 ACCESS_TOKEN_KEY = "103516608-CJ63nEox8ItY9DgDhYU2TBFeLnsZvYUUxslB1d3e"
 ACCESS_TOKEN_SECRET = "65XCfoYcZFUbYRPyNfV5Tso2f8Kv1yi2LYF3QV2xcloFP"
-
-"""
-api = twitter.Api(consumer_key=CONSUMER_KEY, 
-                  consumer_secret=CONSUMER_SECRET, 
-                  access_token_key=ACCESS_TOKEN_KEY, 
-                  access_token_secret=ACCESS_TOKEN_SECRET)
-"""
 
 
 # Twitter API предоставляет информацию о местонахождении пользователя, но эта информация представлена в текстовом виде, например так:
@@ -145,25 +138,32 @@ api = twitter.Api(consumer_key=CONSUMER_KEY,
 # In[5]:
 
 # Input your user name
-GEO_USER_NAME = "marinae"
+GEO_USER_NAMES = ["marinae3", "marinae4", "marinae5", "marinae6", "marinae", "marinae2"]
 
 def get_coordinates_by_location(location):
-    # get data from GeoNames
-    url = "http://api.geonames.org/searchJSON?q=" + location + "&maxRows=1&username=" + GEO_USER_NAME
-    r = requests.get(url)
-    data = json.loads(r.text)
     
-    # check result
-    if 'totalResultsCount' in data:
-        if data['totalResultsCount'] > 0:
-            # city exists
-            i = data['geonames'][0]
-            # return its coordinates and country
-            return (i['lat'], i['lng'], i['name'])
-        else:
-            return (0, 0, u'')
-    else:
-        return (0, 0, u'')
+    # replace character '#'
+    location = location.replace(u'#', '')
+    
+    # try to get info by multiple accounts
+    for username in GEO_USER_NAMES:
+        
+        # get data from GeoNames.org
+        url = "http://api.geonames.org/searchJSON?q=" + location + "&maxRows=1&username=" + username
+        r = requests.get(url)
+        data = json.loads(r.text)
+
+        # check result
+        if 'totalResultsCount' in data:
+            if data['totalResultsCount'] > 0:
+                # city exists
+                i = data['geonames'][0]
+                # return its coordinates and country
+                return (i['lng'], i['lat'], i['countryName'])
+            else:
+                return (0, 0, u'')
+            
+    return (0, 0, u'')
 
 
 # Следующий шаг -- вызов Twitter API для сбора данных и сохранения их в data frame. После чего data frame c собранными данными совмещается с data frame, содержащим данные исходной обучающей выборки. 
@@ -193,7 +193,7 @@ def twitter_user_to_dataframe_record(user):
         
     if user['location'] is not None and user['location'].strip() != "":
         record["location"] = user['location']
-        record["lat"], record["lon"], record["country"] = get_coordinates_by_location(user['location'])
+        record["lon"], record["lat"], record["country"] = get_coordinates_by_location(user['location'])
     
     return record
 
@@ -207,6 +207,9 @@ def get_user_records(df):
     auth = OAuth1(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN_KEY, ACCESS_TOKEN_SECRET)
     
     while lower < count:
+        # print current state
+        print "users " + str(lower) + " to " + str(upper) + "..."
+        
         # next 100 users
         part_records = df['user_id'][lower:upper]
         
@@ -242,9 +245,17 @@ print "Finished building data frame"
 
 ### Exploratory Data Analysis
 
+# In[8]:
+
+OUT_FILE_PATH = "files/geonames_out.csv"
+print "Saving output data frame to %s" % OUT_FILE_PATH
+df_full.to_csv(OUT_FILE_PATH, sep=";", index=False, encoding="utf-8", quoting=csv.QUOTE_NONNUMERIC)
+df_full.head()
+
+
 # Для того, чтобы лучше понять, как устроена наша обучающая выборка, построим несколько графиков. Сначала построим долю "положительных" пользователей в зависимости от дня создания аккаунта. По горизонтальной оси отложим день создания аккаунта, а по вертикальной -- долю "положительных" пользователей ([подсказка](http://anokhin.github.io/img/hw1_distr.png)). Необходимо дописать код функции count_users. В функции необходимо посчитать пользователей в каждой группе (2 балла).
 
-# In[27]:
+# In[9]:
 
 def count_users(grouped):
     """
@@ -297,7 +308,7 @@ pl.show()
 
 # Видно, что доля "положительных" аккаунтов в выборке растет с увеличением времени. Посмотрим, где живут пользователи положительной и отрицательной категории. Для этого отметим на карте каждого положительного пользователя красным, а отрицательного -- зеленым цветом ([подсказка](http://anokhin.github.io/img/hw1_map.png)). Необходимо реализовать функцию plot_points_on_map. В функции необходимо отобразить на карте пользователей из разных классов (3 балла).
 
-# In[113]:
+# In[11]:
 
 pl.figure(figsize=(20,12))
 
@@ -315,7 +326,7 @@ def plot_points_on_map(df_full):
     """
     
     # leave only necessary data
-    cutted = pd.DataFrame(df_full, columns=['class', 'lat', 'lon'])
+    cutted = pd.DataFrame(df_full, columns=['class', 'lon', 'lat'])
     
     # check if longitude (latitude as well) is not a number
     filtered = cutted[cutted.lon == cutted.lon]
@@ -324,17 +335,17 @@ def plot_points_on_map(df_full):
     filtered_nn = filtered[(filtered.lon != 0) & (filtered.lat != 0)]
     
     # group filtered dataset by coordinates
-    grouped = filtered_nn.groupby([filtered_nn['lat'], filtered_nn['lon']])
+    grouped = filtered_nn.groupby([filtered_nn['lon'], filtered_nn['lat']])
     
-    for i in grouped['lat', 'lon']:
+    for i in grouped['lon', 'lat']:
         # count positive users from this area
         positive = len(np.nonzero(i[1]['class'])[0])
         
         # count negative users from this area
         negative = len(i[1]['class']) - positive
         
-        lat = i[0][0]
-        lon = i[0][1]
+        lon = i[0][0]
+        lat = i[0][1]
         
         # draw circle
         if positive > negative:
@@ -358,7 +369,7 @@ pl.show()
 
 OUT_FILE_PATH = "files/hw1_out.csv"
 print "Saving output data frame to %s" % OUT_FILE_PATH
-df_full.to_csv(OUT_FILE_PATH, sep="\t", index=False, encoding="utf-8", quoting=csv.QUOTE_NONNUMERIC)
+df_full.to_csv(OUT_FILE_PATH, sep=";", index=False, encoding="utf-8", quoting=csv.QUOTE_NONNUMERIC)
 df_full.head()
 
 
