@@ -1,5 +1,5 @@
 # bigdata
-TechnoSphere homework
+TechnoSphere homework №1
 
 1) Распределение пользователей по месяцам:
 ![ScreenShot](https://github.com/marinae/bigdata/blob/master/screenshots/months.png)
