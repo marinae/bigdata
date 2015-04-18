@@ -1,5 +1,5 @@
 # bigdata
-TechnoSphere homework
+TechnoSphere homework №2
 
 1) Географические признаки:<br/>
 ![ScreenShot](https://github.com/marinae/bigdata/blob/master/screenshots/geo_features.png)
