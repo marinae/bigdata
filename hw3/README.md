@@ -1,5 +1,5 @@
 # bigdata
-TechnoSphere homework
+TechnoSphere homework №3
 
 1) Результат работы алгоритма на данных iris:<br/>
 ![ScreenShot](https://github.com/marinae/bigdata/blob/master/screenshots/iris.png)
